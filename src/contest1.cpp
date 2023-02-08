@@ -26,6 +26,9 @@ roslaunch turtlebot_navigation gmapping_demo.launch
 roslaunch turtlebot_rviz_launchers view_navigation.launch
 rosrun mie443_contest1 contest1
 
+How to save a map from GMapping:
+rosrun map_server map_saver -f <your_map_name>
+
 Steps to push to Github:
 1. How to add changes
 
@@ -33,55 +36,27 @@ git add <your files>
 
 2. Commit changes
 
-git commit -m "your message
+git commit -m "your message"
 
 3. Push to main
 
 git push origin main
 
+Steps to making a new branch and checking it out:
+1. git checkout -b new_branch
+2. git add .
+3. git commit -m "message"
+4. git push --set-upstream origin new_branch 
+
 */
-#include "callback_functions.cpp" // callback_functions.h doesn't work ...
 
-// #include "move_functions.h"
 
-//Rotate Function -- OLD
-void rotateBot(){
-    ros::NodeHandle nh_custom;
-    ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
-    geometry_msgs::Twist vel_rotate;
 
-    vel_rotate.angular.z=0.8;
-    vel_pub_custom.publish(vel_rotate);
-    return;
-}
+/*////////////// Notes ///////////////
+Aaran has mentioned that there would be a lot more obstacles in the final maze than in the current test setup.
+I think he just gave us a hint.
+*/
 
-void e_stop(int time) { // why do we have this?
-    ros::NodeHandle nh_custom;
-    ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
-    geometry_msgs::Twist vel_forward;
-
-    ros::Subscriber bumper_sub_2 = nh_custom.subscribe("mobile_base/events/bumper", 5, &bumperCallback);
-    ros::Subscriber laser_sub_2 = nh_custom.subscribe("scan", 2, &laserCallback);
-    ros::Subscriber odom_2 = nh_custom.subscribe("odom", 1, &odomCallback);    
-    
-    ros::Rate loop_rate_2(100);
-
-    vel_forward.angular.z = 0;
-    vel_forward.linear.x = 0;
-    vel_forward.linear.y = 0;
-    
-    // Start Timer
-    std::chrono::time_point<std::chrono::system_clock> start;
-    start = std::chrono::system_clock::now();
-    uint64_t secondsElapsed = 0;
-
-    // Stop the robot until secondsElapsed > time
-    while(secondsElapsed < time){
-        vel_pub_custom.publish(vel_forward);
-        secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
-    }
-
-}
 /* RANDOM WALK SKELETON
 
 while:
@@ -92,172 +67,21 @@ while:
 
 */
 
-void move_x_meters(double meters){
-    // Define Publishers and Subscribers
-    // Take current position reading from odom
-    // Travel backwards until distance travelled is meters long
-    // Stop
-    // End function
 
-    /* Consider deleting these and only using subscribers/publsihers from int main */
-    ros::NodeHandle nh_custom;
-    ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
-    geometry_msgs::Twist vel_forward;
 
-    ros::Subscriber bumper_sub_2 = nh_custom.subscribe("mobile_base/events/bumper", 5, &bumperCallback);
-    ros::Subscriber laser_sub_2 = nh_custom.subscribe("scan", 2, &laserCallback);
-    ros::Subscriber odom_2 = nh_custom.subscribe("odom", 1, &odomCallback);    
-    
-    ros::Rate loop_rate_2(100);
 
-    // Take current odom reading
-    float old_x = posX;
-    float old_y = posY;
-    float init_pose[] = {old_x,old_y};
-    double distance = 0.0;
+        /////////////////* Seek Testing: *///////////////////////
+        // float angle_increment = (float) 60/639;
+        // float angle_to_mindist = (float) laser_min_index * angle_increment;
+        // float heading_to_mindist = angle_to_mindist - 30; //Positive if left of robot. Negative if right of robot.
 
-    // Keep moving 
-    while (distance < meters){
-        // Must spin to update odom values
-        ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
-        // Can we somehow wait here until odom_2 returns a value?
-
-        distance = sqrt(pow(init_pose[0]-posX,2.0) + pow(init_pose[1]-posY,2.0));
-
-        ROS_INFO("My distance: %f", distance);
-        vel_forward.linear.x=-0.2;
-        vel_pub_custom.publish(vel_forward);
-
-        //Restricts loop rate to 100 Hz
-        loop_rate_2.sleep();
-        // For loop rate 5, distance = 0.345 m, but actual distance travelled = 0.5 m
-        // For loop rate 2, distance = 0.285 m
-        // For loop rate 100
-    }
-
-    // Brake
-    vel_forward.linear.x=0.0;
-    vel_forward.linear.y=0.0;
-    vel_pub_custom.publish(vel_forward);
-
-}
-
-void rotate(double desired_angle)
-{
-
-    /* Consider deleting these and only using subscribers/publsihers from int main */
-    ros::NodeHandle nh_custom;
-    ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
-    geometry_msgs::Twist vel_forward;
-
-    ros::Subscriber bumper_sub_2 = nh_custom.subscribe("mobile_base/events/bumper", 5, &bumperCallback);
-    ros::Subscriber laser_sub_2 = nh_custom.subscribe("scan", 2, &laserCallback);
-    ros::Subscriber odom_2 = nh_custom.subscribe("odom", 1, &odomCallback);    
-    
-    ros::Rate loop_rate_2(100);
-
-    // Take current odom reading
-    float old_yaw = yaw;
-    double angle = 0.0; //in Rad.
-
-    // Keep moving
-    // For CCW
-    if (desired_angle > 0){
-        while (angle < desired_angle){
-        // Must spin to update odom values
-        ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
+        // ROS_INFO("Heading to min: %f. Min Dist: %f", heading_to_mindist, minLaserDist);
         
-        angle = yaw - old_yaw;
+        // if (has_acquired_obstacle){
+        //     rotate(DEG2RAD(heading_to_mindist));
+        //     move_x_meters(minLaserDist-0.6); // move until 0.6 m away from obstacle. // What if overshoots?
+        // }
 
-        if (angle < 0){
-            // Add 360 deg to correct for when robot rotates past 0 degrees.
-            angle += 2*M_PI;
-        }
-
-        ROS_INFO("My angle turned CCW: %lf", RAD2DEG(angle));
-        
-        //Turn Counterclockwise
-        vel_forward.angular.z=0.3;
-
-        vel_pub_custom.publish(vel_forward);
-
-        //Restricts loop rate to 100 Hz
-        loop_rate_2.sleep();
-    
-    }
-    }
-
-    // For CW
-    if (desired_angle < 0){
-        while (angle > desired_angle){
-        // Must spin to update odom values
-        ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
-        
-        angle = old_yaw - yaw;
-
-        if (angle > 0){
-            // Add 360 deg to correct for when robot rotates past 0 degrees.
-            angle -= 2*M_PI;
-        }
-
-        ROS_INFO("My angle turned CW: %lf", RAD2DEG(angle));
-        
-        //Turn Counterclockwise
-        vel_forward.angular.z=-0.3;
-
-        vel_pub_custom.publish(vel_forward);
-
-        //Restricts loop rate to 100 Hz
-        loop_rate_2.sleep();
-        }
-    }
-    
-
-    vel_forward.angular.z=0.0;
-
-    vel_pub_custom.publish(vel_forward);
-
-}
-
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "image_listener"); //can change the node name to anything
-    ros::NodeHandle nh;
-
-    // 2 subscribers
-    ros::Subscriber bumper_sub = nh.subscribe("mobile_base/events/bumper", 10, &bumperCallback);
-    ros::Subscriber laser_sub = nh.subscribe("scan", 10, &laserCallback);
-    ros::Subscriber odom = nh.subscribe("odom", 1, &odomCallback);
-
-    // 1 publisher
-    ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
-
-    // Increasing it makes loops run more times per second.
-    ros::Rate loop_rate(100);
-
-    geometry_msgs::Twist vel;
-
-    // contest count down timer
-    std::chrono::time_point<std::chrono::system_clock> start;
-    start = std::chrono::system_clock::now();
-    uint64_t secondsElapsed = 0;
-
-    float angular = 0.0;
-    float linear = 0.0;
-    // ** IMPORTANT: If something is too close to sensor, it will not be detected!
-    float laser_min_dist = 0.5; // At least 0.5
-
-    int loopCount=0;
-
-    while(ros::ok() && secondsElapsed <= 480) {
-        ros::spinOnce();
-        // ROS_INFO("Min Laser: %f", minLaserDist);
-        // ROS_INFO("Postion: (%f, %f) Orientation: %f degrees Range: %f", posX, posY, RAD2DEG(yaw), minLaserDist);
-        // Check if any of the bumpers were pressed.
-        bool any_bumper_pressed = false;
-        for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
-            any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-        }    
 
         ///////////////////* RANDOM WALK *////////////////////
         // How to improve:
@@ -318,7 +142,7 @@ int main(int argc, char **argv)
 
         --- Wall-following ---
         *Triggers when Near Wall
-        *Also requires minLaserDist > laser_min_dist and !anybumperpressed.
+        *Also requires minLaserDist > too_close_range and !anybumperpressed.
 
         Ideas:
         //You want to travel along the wall until the end of the wall is reached.
@@ -334,7 +158,7 @@ int main(int argc, char **argv)
 
         --- Wall-searching ---
         *Triggers when Near End of Wall
-        *Also requires minLaserDist > laser_min_dist and !anybumperpressed.
+        *Also requires minLaserDist > too_close_range and !anybumperpressed.
         
         Ideas:
         //You want to look for a new wall when you reach end of wall. Where are they found?
@@ -349,7 +173,7 @@ int main(int argc, char **argv)
         
         --- Recovery ---
         *Triggers when Stuck
-        *Also requires minLaserDist > laser_min_dist and !anybumperpressed.
+        *Also requires minLaserDist > too_close_range and !anybumperpressed.
       
         Ideas:
         //You want to recover the robot to a location where it can go somewhere else.
@@ -361,26 +185,293 @@ int main(int argc, char **argv)
 
         *****/
 
-        // States of the robot
+#include "callback_functions.cpp" // callback_functions.h doesn't work ...
+
+// #include "move_functions.h"
+
+//Rotate Function -- OLD
+void rotateBot(){
+    ros::NodeHandle nh_custom;
+    ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
+    geometry_msgs::Twist vel_rotate;
+
+    vel_rotate.angular.z=0.8;
+    vel_pub_custom.publish(vel_rotate);
+    return;
+}
+
+void e_stop(int time) { // why do we have this?
+    ros::NodeHandle nh_custom;
+    ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
+    geometry_msgs::Twist vel_forward;
+
+    ros::Subscriber bumper_sub_2 = nh_custom.subscribe("mobile_base/events/bumper", 5, &bumperCallback);
+    ros::Subscriber laser_sub_2 = nh_custom.subscribe("scan", 2, &laserCallback);
+    ros::Subscriber odom_2 = nh_custom.subscribe("odom", 1, &odomCallback);    
+    
+    ros::Rate loop_rate_2(100);
+
+    vel_forward.angular.z = 0;
+    vel_forward.linear.x = 0;
+    vel_forward.linear.y = 0;
+    
+    // Start Timer
+    std::chrono::time_point<std::chrono::system_clock> start;
+    start = std::chrono::system_clock::now();
+    uint64_t secondsElapsed = 0;
+
+    // Stop the robot until secondsElapsed > time
+    while(secondsElapsed < time){
+        vel_pub_custom.publish(vel_forward);
+        secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
+    }
+
+}
+
+
+void move_x_meters(double meters){
+
+
+    /* Consider deleting these and only using subscribers/publsihers from int main */
+    ros::NodeHandle nh_custom;
+    ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
+    geometry_msgs::Twist vel_forward;
+
+    ros::Subscriber bumper_sub_2 = nh_custom.subscribe("mobile_base/events/bumper", 5, &bumperCallback);
+    ros::Subscriber laser_sub_2 = nh_custom.subscribe("scan", 2, &laserCallback);
+    ros::Subscriber odom_2 = nh_custom.subscribe("odom", 1, &odomCallback);    
+    
+    ros::Rate loop_rate_2(100);
+
+    // Take current odom reading
+    float old_x = posX;
+    float old_y = posY;
+    float init_pose[] = {old_x,old_y};
+    double distance = 0.0;
+
+    // Keep moving 
+    while (distance < meters){
+        // Must spin to update odom values
+        ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
+        // Can we somehow wait here until odom_2 returns a value?
+
+        distance = sqrt(pow(init_pose[0]-posX,2.0) + pow(init_pose[1]-posY,2.0));
+
+        ROS_INFO("My distance: %f", distance);
+        vel_forward.linear.x=0.2;
+        vel_pub_custom.publish(vel_forward);
+
+        //Restricts loop rate to 100 Hz
+        loop_rate_2.sleep();
+        // For loop rate 5, distance = 0.345 m, but actual distance travelled = 0.5 m
+        // For loop rate 2, distance = 0.285 m
+        // For loop rate 100
+    }
+
+    // Brake
+    vel_forward.linear.x=0.0;
+    vel_forward.linear.y=0.0;
+    vel_pub_custom.publish(vel_forward);
+
+}
+
+void rotate(double desired_angle)
+{
+
+    /* Consider deleting these and only using subscribers/publsihers from int main */
+    ros::NodeHandle nh_custom;
+    ros::Publisher vel_pub_custom = nh_custom.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
+    geometry_msgs::Twist vel_forward;
+
+    ros::Subscriber bumper_sub_2 = nh_custom.subscribe("mobile_base/events/bumper", 5, &bumperCallback);
+    ros::Subscriber laser_sub_2 = nh_custom.subscribe("scan", 2, &laserCallback);
+    ros::Subscriber odom_2 = nh_custom.subscribe("odom", 1, &odomCallback);    
+    
+    ros::Rate loop_rate_2(100);
+
+    // Take current odom reading
+    float old_yaw = yaw;
+    double angle = 0.0; //in Rad.
+
+    // Keep moving
+    // For CCW
+    if (desired_angle > 0){
+        while (angle < desired_angle){
+        // Must spin to update odom values
+        ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
+        
+        angle = yaw - old_yaw;
+
+        if (angle < 0){
+            // Add 360 deg to correct for when robot rotates past 0 degrees.
+            angle += 2*M_PI;
+        }
+
+        ROS_INFO("My angle turned CCW: %lf", RAD2DEG(angle));
+        
+        //Turn Counterclockwise
+        vel_forward.angular.z=0.4;
+
+        vel_pub_custom.publish(vel_forward);
+
+        //Restricts loop rate to 100 Hz
+        loop_rate_2.sleep();
+    
+    }
+    }
+
+    // For CW
+    if (desired_angle < 0){
+        while (angle > desired_angle){
+        // Must spin to update odom values
+        ros::spinOnce(); // More efficient way? maybe just ask odom_2 for info
+        
+        angle = old_yaw - yaw;
+
+        if (angle > 0){
+            // Add 360 deg to correct for when robot rotates past 0 degrees.
+            angle -= 2*M_PI;
+        }
+
+        ROS_INFO("My angle turned CW: %lf", RAD2DEG(angle));
+        
+        //Turn Counterclockwise
+        vel_forward.angular.z=-0.3;
+
+        vel_pub_custom.publish(vel_forward);
+
+        //Restricts loop rate to 100 Hz
+        loop_rate_2.sleep();
+        }
+    }
+    
+
+    vel_forward.angular.z=0.0;
+
+    vel_pub_custom.publish(vel_forward);
+
+}
+
+bool is_far(float dist){
+    if (dist > 1){
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+int main(int argc, char **argv)
+{
+    ros::init(argc, argv, "image_listener"); //can change the node name to anything
+    ros::NodeHandle nh;
+
+    // 2 subscribers
+    ros::Subscriber bumper_sub = nh.subscribe("mobile_base/events/bumper", 10, &bumperCallback);
+    ros::Subscriber laser_sub = nh.subscribe("scan", 10, &laserCallback);
+    ros::Subscriber odom = nh.subscribe("odom", 1, &odomCallback);
+
+    // 1 publisher
+    ros::Publisher vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel_mux/input/teleop", 1);
+
+    // Increasing it makes loops run more times per second.
+    ros::Rate loop_rate(100);
+
+    geometry_msgs::Twist vel;
+
+    // contest count down timer
+    std::chrono::time_point<std::chrono::system_clock> start;
+    start = std::chrono::system_clock::now();
+    uint64_t secondsElapsed = 0;
+
+    float angular = 0.0;
+    float linear = 0.0;
+    // ** IMPORTANT: If something is too close to sensor, it will not be detected!
+    float too_close_range = 0.5; // At least 0.5
+
+    int loopCount=0;
+
+    while(ros::ok() && secondsElapsed <= 480) {
+        ros::spinOnce();
+        ROS_INFO("min Laser: %f", minLaserDist);
+        // ROS_INFO("vector min Laser: %f", *std::min_element(laser_scan_array.begin(), laser_scan_array.end()));
+        
+        //////////// States of the robot ////////////
+        
+        // Check if any of the bumpers were pressed.
+        bool any_bumper_pressed = false;
+        for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
+            any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
+        }   
+
         // ** IMPORTANT: If something is too close to sensor, it will not be detected!
         // True if path in front of robot has enough space to move into.
-        bool is_way_clear = (minLaserDist > laser_min_dist);
-        bool near_wall;
-        bool near_end_of_wall;
-        bool is_stuck;
+        bool is_way_clear = (minLaserDist > too_close_range);
+
+        bool has_acquired_obstacle = false;
+        float acquisition_range = 2.4;
+        if (minLaserDist < acquisition_range) {
+            has_acquired_obstacle = true;
+        }
+
+        bool near_wall = false;
+        float follow_range = 0.7;
+        if (minLaserDist < follow_range) {
+            near_wall = true;
+        }
         
+        // If robot is too close to an obstacle, path is not clear.
+        if (minLaserDist < too_close_range) {
+            is_way_clear = false;
+        }
+        
+        /* Ideally, robot follows wall at a distance between too_close_range and follow_range */
+        // PID ?
+
+        // if ((minLaserDist < 0.6) && ***SOMETHING*** ) {
+
+        // }
+
+        //// Now robot has sought an obstacle and is 0.7 m away from it, in the center of its vision.
+        // Turn left and check for obstacles
+        
+        // Is mindex inside of the left field of vision?
+       
+        bool wall_follow_is_blocked = true;
+        // if (mindex > (int) 639.0/3.0) {
+        //     wall_follow_is_blocked = false;
+        // }
+
+        // Check if left field of vision is detecting empty space. If yes, that is wall edge.
+        bool wall_follow_is_ending;
+        // Check if absence is detected in the middle of the FOV. If distance
+        // from indices 220 and 440 are greater than 0.7m (the wall follow distance)
+        // then the wall has ended.
+
+
+        // For Recovery
+        bool is_stuck;
+
+        // if (laser_scan_array[(int) nLasers/3 .. nLasers]){
+
+        // }
 
         if (near_wall && (is_way_clear && !any_bumper_pressed)) {
-            //Wall follower
-
+            //Wall follower 
+            
             //Detect Flat Wall OR obstacle that has length > 1m.
+            //For now, all obstacles are treated as if they were a "wall"
+            
 
             //Decide to follow left or right
             
             //Stone-Skipping Function
 
+
         }
         
+        //Random Walk
+        int rotation_angle = 30;
+        int rotation_direction = 1; //-1 for clockwise
         if (is_way_clear && !any_bumper_pressed) {
             // Execute movement
             angular = 0.0;
@@ -389,18 +480,39 @@ int main(int argc, char **argv)
 
         else {
             //If way is not clear, stop and rotate 30
+            // First check if there is open space on the left and if there is more than on right side
+            if ((open_space_count_left > nLasers/4) && (open_space_count_left > open_space_count_right)){ // slightly less than max possible counts
+                rotation_direction = 1;
+                
+            }
+            else if ((open_space_count_right > nLasers/4) && (open_space_count_right > open_space_count_left)){
+                rotation_direction = -1;
+
+            }
+            else { // if none is true, then pick a random direction.
+                int rand_num = rand()%100;
+                if (rand_num > 50){
+                    rotation_direction = -1;
+
+                }
+                else{
+                    rotation_direction = 1;
+                }
+            }
             vel.angular.z = 0;
             vel.linear.x = 0;
             vel_pub.publish(vel);
-            rotate(DEG2RAD(30)); // CCW
+
+            // How to rotate Clockwise? I still have not tested it.
+            rotate(DEG2RAD(rotation_direction*rotation_angle)); // CCW
+
 
         }
-    
         
         vel.angular.z = angular;
         vel.linear.x = linear;
         vel_pub.publish(vel);
-
+        
         // Update the timer.
         secondsElapsed = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-start).count();
         
@@ -410,113 +522,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
-
-        // // Basic Timer
-        // std::clock_t start2;
-        // double duration;
-        // start2 = std::clock();
-        // while ((std::clock() - start2)/CLOCKS_PER_SEC < 1){
-            
-        //     ROS_INFO("Waited %f Seconds.",(float) (std::clock() - start2)/CLOCKS_PER_SEC);
-
-        // }
-
-        // //
-        // // Check if any of the bumpers were pressed.
-        // bool any_bumper_pressed = false;
-        // for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
-        // any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-        // }
-        // //
-        
-        // // Check if any of the bumpers were pressed.
-        // bool any_bumper_pressed = false;
-        // for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
-        //     any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-        // }    
-
-        // if (posX < 0.5 && yaw < M_PI / 12 && !any_bumper_pressed && minLaserDist > 0.7) {
-        //     angular = 0.0;
-        //     linear = 0.2;
-        // }
-        // else if (yaw < M_PI / 2 && posX > 0.5 && !any_bumper_pressed && minLaserDist > 0.5) {
-        //     angular = M_PI / 6;
-        //     linear = 0.0;
-        // }
-        // else if (minLaserDist > 1. && !any_bumper_pressed) {
-        //     linear = 0.1;
-        //     if (yaw < 17 / 36 * M_PI || posX > 0.6) {
-        //         angular = M_PI / 12.;
-        //     }
-        //     else if (yaw < 19 / 36 * M_PI || posX < 0.4) {
-        //         angular = -M_PI / 12.;
-        //     }
-        //     else {
-        //         angular = 0;
-        //     }
-        // }
-        // else {
-        //     angular = 0.0;
-        //     linear = 0.0;
-        // }
-
-
-        // // Check if any of the bumpers were pressed.
-        // bool any_bumper_pressed = false;
-        // for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
-        // any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-        // }
-        // //
-        // // Control logic after bumpers are being pressed.
-        // if (posX < 0.5 && yaw < M_PI / 12 && !any_bumper_pressed) {
-        //     angular = 0.0;
-        //     linear = 0.2;
-        // }
-        // else if (yaw < M_PI / 2 && posX > 0.5 && !any_bumper_pressed) {
-        //     angular = M_PI / 6;
-        //     linear = 0.0;
-        // }
-        // else {
-        //     angular = 0.0;
-        //     linear = 0.0;
-        // }
-        // vel.angular.z = angular;
-        // vel.linear.x = linear;
-        // vel_pub.publish(vel);
-
-
-
-
-        // SCAN EXAMPLE
-        // ROS_INFO("Postion: (%f, %f) Orientation: %f degrees Range: %f", posX, posY, RAD2DEG(yaw), minLaserDist);
-        // // Check if any of the bumpers were pressed.
-        // bool any_bumper_pressed = false;
-        // for (uint32_t b_idx = 0; b_idx < N_BUMPER; ++b_idx) {
-        //     any_bumper_pressed |= (bumper[b_idx] == kobuki_msgs::BumperEvent::PRESSED);
-        // }    
-
-        // if (posX < 0.5 && yaw < M_PI / 12 && !any_bumper_pressed && minLaserDist > 0.7) {
-        //     angular = 0.0;
-        //     linear = 0.2;
-        // }
-        // else if (yaw < M_PI / 2 && posX > 0.5 && !any_bumper_pressed && minLaserDist > 0.5) {
-        //     angular = M_PI / 6;
-        //     linear = 0.0;
-        // }
-        // else if (minLaserDist > 1. && !any_bumper_pressed) {
-        //     linear = 0.1;
-        //     if (yaw < 17 / 36 * M_PI || posX > 0.6) {
-        //         angular = M_PI / 12.;
-        //     }
-        //     else if (yaw < 19 / 36 * M_PI || posX < 0.4) {
-        //         angular = -M_PI / 12.;
-        //     }
-        //     else {
-        //         angular = 0;
-        //     }
-        // }
-        // else {
-        //     angular = 0.0;
-        //     linear = 0.0;
-        // }

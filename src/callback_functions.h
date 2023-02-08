@@ -12,6 +12,11 @@
 #include <iostream>
 #include <cstdio>
 #include <ctime>
+#include <cstdlib>
+#include <algorithm>
+#include <iterator>
+#include <vector>
+
 //#include "robot_functions.h"
 //TODO: add #ifndef
 
@@ -24,7 +29,13 @@ uint8_t bumper[3] = {kobuki_msgs::BumperEvent::RELEASED, kobuki_msgs::BumperEven
 
 // Added for LASER demo
 float minLaserDist = std::numeric_limits<float>::infinity();
-int32_t nLasers=0, desiredNLasers=0, desiredAngle=180; 
+int32_t nLasers=0, desiredNLasers=0, desiredAngle=60, laser_array_size = 639;
+int32_t laser_min_index=320; // Half of laser scan array size
+float test_dist=0;
+std::vector<float> laser_scan_array;
+int open_space_count_right =0;
+int open_space_count_left =0;
+int closed_space_count=0;
 
 float posX = 0.0, posY = 0.0, yaw = 0.0;
 float angular_vel_to_be_published = 0.0;

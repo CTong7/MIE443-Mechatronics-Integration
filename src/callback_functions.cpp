@@ -4,6 +4,8 @@
 #include "callback_functions.h"
 // TODO: Use #ifndef
 
+//int index_of_smallest_element(float arr[],)
+
 // SECOND EXAMPLE: Bumper
 void bumperCallback(const kobuki_msgs::BumperEvent::ConstPtr& msg)
 {
@@ -12,6 +14,12 @@ void bumperCallback(const kobuki_msgs::BumperEvent::ConstPtr& msg)
     bumper[msg->bumper] = msg->state;
     ROS_INFO("Bumper #%lf pressed.", bumper);
 }
+
+// This thing is dumber than I thought.
+// The camera cannot do feature detection and identify obstacles it sees.
+// It can only sense that it has detected something.
+// HOwever, it can still tell you how far away it is and in which direction it sees it.
+// But you can't see what that something is.
 
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
@@ -33,13 +41,57 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg)
                 minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
             }
         }
+
+        // Copy the msg->ranges array into global variable
+        // int arr_size = nLasers;
+        // laser_scan_array.resize(arr_size);
+
+        // std::copy(std::begin(msg->ranges), std::end(msg->ranges), std::back_inserter(laser_scan_array));
     }
     else {
+        int mindex = 0;
+        open_space_count_left=0;
+        open_space_count_right =0;
+        closed_space_count=0;
+
         for (uint32_t laser_idx = 0; laser_idx < nLasers; ++laser_idx) {
-            minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
+            if (msg->ranges[laser_idx] > 1.5){
+                if (laser_idx < nLasers/3){
+                    open_space_count_left++;
+                }
+
+                if (laser_idx > 2*nLasers/3){
+                    open_space_count_right++;
+
+                }
+            }
+            if (!std::isinf(msg->ranges[laser_idx])){
+                minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
+                
+                if (msg->ranges[laser_idx] < msg->ranges[mindex]){
+                    mindex = laser_idx;
+                }
+                // minLaserDist = std::min(minLaserDist, msg->ranges[laser_idx]);
+            }
+
+
+
         }
+        laser_min_index = mindex;
+
+        // Copy the msg->ranges array into global variable
+        // int arr_size = nLasers;
+        // laser_scan_array.resize(arr_size);
+
+        // std::copy(std::begin(msg->ranges), std::end(msg->ranges), std::back_inserter(laser_scan_array));
+
+
     }
-    ROS_INFO("Min Laser Dist: %f", minLaserDist);
+
+    // Based on tests, range_min is just the lowest sensible distance. Not the minimum distances in the laser distance array.
+    // If you want to minimum distance, we must search msg->ranges[] ourself.
+    // Can we set range_min ourselves? Can we make it lower so the camera senses lower distances? 
+    ROS_INFO("Min Laser Dist: %f. Range min: %f. Min Index: %i", minLaserDist, msg->range_min, laser_min_index);
 
 
 }
@@ -56,6 +108,6 @@ void odomCallback (const nav_msgs::Odometry::ConstPtr& msg)
     posY = msg->pose.pose.position.y;
     yaw = tf::getYaw(msg->pose.pose.orientation);
     // tf::getYaw(msg->pose.pose.orientation);
-    ROS_INFO("Position: (%f, %f) Orientation: %f rad or %f degrees.", posX, posY, yaw, RAD2DEG(yaw));
+    //ROS_INFO("Position: (%f, %f) Orientation: %f rad or %f degrees.", posX, posY, yaw, RAD2DEG(yaw));
 }
 // #endif
